@@ -33,17 +33,22 @@ library stdJsonDB {
 
     // todo: add more types
 
-    function set(string memory key, address value, string memory path) external {
+    function set(string memory key, address value, string memory path) public {
         string memory json = stdJson.serialize(jsonkey, key, value);
         set(json, path);
     }
 
-    function set(string memory key, uint value, string memory path) external {
+    function set(string memory key, uint value, string memory path) public {
         string memory json = stdJson.serialize(jsonkey, key, value);
         set(json, path);
     }
 
-    function set(string memory key, string memory value, string memory path) external {
+    function set(string memory key, string memory value, string memory path) public {
+        string memory json = stdJson.serialize(jsonkey, key, value);
+        set(json, path);
+    }
+
+    function set(string memory key, bool value, string memory path) public {
         string memory json = stdJson.serialize(jsonkey, key, value);
         set(json, path);
     }
@@ -57,16 +62,20 @@ library stdJsonDB {
 
     // todo: add more types
 
-    function getAddr(string memory key, string memory path) external view returns (address) {
+    function getAddr(string memory key, string memory path) public view returns (address) {
         return abi.decode(get(key, path), (address));
     }
 
-    function getUint(string memory key, string memory path) external view returns (uint) {
+    function getUint(string memory key, string memory path) public view returns (uint) {
         return abi.decode(get(key, path), (uint));
     }
 
-    function getString(string memory key, string memory path) external view returns (string memory) {
+    function getString(string memory key, string memory path) public view returns (string memory) {
         return abi.decode(get(key, path), (string));
+    }
+
+    function getBool(string memory key, string memory path) public view returns (bool) {
+        return abi.decode(get(key, path), (bool));
     }
 
 }

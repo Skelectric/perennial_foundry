@@ -4,6 +4,7 @@ out/
 # Ignore Environment Variables!
 .env
 .env.prod
+*.env
 
 # Ignore all vscode settings
 .vscode/
