@@ -127,7 +127,13 @@ contract Deploy is Script {
 
     IProduct.ProductInfo productInfo;
 
+    // flag for saving json file
     bool _new = false;
+
+    // beacon proxy constructor args
+    address productBeacon;
+    bytes encInitProductInfo;
+    bytes encBeaconProxyArgs;
 
     function run() external {
 
@@ -147,8 +153,9 @@ contract Deploy is Script {
 
         reuseOrDeployProduct();
 
-        // comment-out unless deploying with --broadcast --skip-simulation flags, or testing
-        saveInfo(); 
+        getBeaconProxyConstructorArgs();
+
+        saveInfo(); // comment-out unless deploying with --broadcast --skip-simulation flags, or testing
 
         // Vm.Log[] memory logs = vm.getRecordedLogs();
 
@@ -197,7 +204,7 @@ contract Deploy is Script {
     }
 
     function makeNewCoordinatorID() internal {
-        console.log("Retreiving new coordinator ID from controller...");
+        console.log("Retrieving new coordinator ID from controller...");
         vm.startBroadcast(deployerPrivateKey);
         coordinatorID = iController.createCoordinator();
         vm.stopBroadcast();
@@ -295,19 +302,25 @@ contract Deploy is Script {
         deploymentInfo = string.concat("/script/", NAME, "_", deploymentInfo);
     }
 
+    function getBeaconProxyConstructorArgs() internal {
+        productBeacon = address(iController.productBeacon());
+        encInitProductInfo = abi.encodeCall(IProduct.initialize, productInfo);
+        encBeaconProxyArgs = abi.encode(productBeacon, encInitProductInfo);
+        vm.setEnv("PRODUCT_BEACON", vm.toString(productBeacon));
+        vm.setEnv("ENC_INIT_PRODUCT_INFO", vm.toString(encInitProductInfo));
+    }
+
     function saveInfo() internal {
         // Replace with convenience function after Foundry Issue #3924 is resolved: https://github.com/foundry-rs/foundry/issues/3924
         // stdJsonDB.set(productName, address(product), deploymentInfo);
-        //
-        // uncomment set() call only if using --skip-simulation flag
-        // to-do: after foundry adds method to differentiate between different runtime environments,
-        // add condition that only calls set() during broadcasts
-        // (https://github.com/foundry-rs/foundry/issues/3928)
-
         if (_new) {
             set("COORDINATOR_ID", coordinatorID, deploymentInfo);
             set(string.concat("Product_", productInfo.name), productAddr, deploymentInfo);
             set(string.concat("PayoffProvider_", productInfo.name), payoffProviderAddr, deploymentInfo);
+            set("productBeacon", productBeacon, deploymentInfo);
+            set(string.concat("encInitProductInfo_", productInfo.name), encInitProductInfo, deploymentInfo);
+            set(string.concat("encBeaconProxyArgs_", productInfo.name), encBeaconProxyArgs, deploymentInfo);
+            console.log("Saved deployment info to %s", deploymentInfo);
         } else {
             console.log("No changes.");
         }
@@ -362,6 +375,11 @@ contract Deploy is Script {
     }
 
     function set(string memory key, uint value, string memory path) public {
+        string memory json = stdJson.serialize("", key, value);
+        set(json, path);
+    }
+
+    function set(string memory key, bytes memory value, string memory path) public {
         string memory json = stdJson.serialize("", key, value);
         set(json, path);
     }
